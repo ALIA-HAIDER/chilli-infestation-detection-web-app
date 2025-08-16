@@ -15,9 +15,6 @@ export default function ScanNowPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [loct, setloct] = useState<{ lat: number; lng: number } | null>(null);
-  const [address, setAddress] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [submitStep, setSubmitStep] = useState<'' | 'location' | 'analysis'>('');
   
 
@@ -29,7 +26,6 @@ export default function ScanNowPage() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         const msg = "Geolocation is not supported by your browser";
-        setError(msg);
         reject(new Error(msg));
         return;
       }
@@ -38,8 +34,6 @@ export default function ScanNowPage() {
         async (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-          setloct({ lat, lng });
-          setError(null);
 
           // Reverse geocoding via our API route to avoid CORS
           try {
@@ -49,18 +43,15 @@ export default function ScanNowPage() {
             }
             const data = await res.json();
             const fetchedAddress = data.display_name || "Address not found";
-            setAddress(fetchedAddress);
             resolve(fetchedAddress);
           } catch (err) {
             console.error(err);
             const errorMsg = "Failed to fetch address";
-            setAddress(errorMsg);
             reject(new Error(errorMsg));
           }
         },
         (err) => {
           console.error(err);
-          setError(err.message);
           reject(new Error(err.message));
         }
       );
@@ -116,9 +107,13 @@ export default function ScanNowPage() {
       await submitPlantData(image, userLocation);
       toast.success("Analysis complete! Redirecting...");
       router.push("/ResultPage");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Submission process failed:", error);
-      toast.error(error.message || "Failed to get location or analyze image.");
+      let message = "Failed to get location or analyze image.";
+      if (error instanceof Error) {
+        message = error.message;
+      }
+      toast.error(message);
     } finally {
       setSubmitStep('');
     }
@@ -287,4 +282,4 @@ export default function ScanNowPage() {
     </>
   );
 }
-                          
+                       
