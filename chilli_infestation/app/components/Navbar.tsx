@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 // import Image from "next/image";
 // import logo1 from "@/public/logo1.png";
 // import logo2 from "@/public/logo2.png";
@@ -15,8 +16,7 @@ export default function Navbar() {
 
   const handleDownload = () => {
     // Placeholder for app download functionality
-    // You can replace this with actual download logic when your app is ready
-    alert("App download will be available soon!");
+    toast("App download will be available soon!");
   };
 
   return (

@@ -1,9 +1,11 @@
 "use client";
 import { FaRedo, FaSave } from "react-icons/fa";
 import Image from "next/image";
+import { usePlantStore } from "@/store/usePlantStore";
 
 export default function ResultPage() {
-  const previewImage = "/leaf-preview.jpg";
+  const { disease, solution, imageUrl } = usePlantStore();
+ 
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#fdfdfd] to-[#e8ead0] px-4 py-16 flex flex-col items-center">
@@ -11,7 +13,7 @@ export default function ResultPage() {
         {/* Heading */}
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-[#0A400C]">
-            Detected: Leaf Curl Disease
+            Detected: {disease}
           </h1>
           <p className="text-gray-600 text-sm">(91% confidence)</p>
         </div>
@@ -19,7 +21,7 @@ export default function ResultPage() {
         {/* Image Preview */}
         <div className="w-full max-w-md mx-auto rounded-lg overflow-hidden shadow-md border">
           <Image
-            src={previewImage}
+            src={imageUrl}
             alt="Detected Leaf"
             width={500}
             height={300}
@@ -67,6 +69,7 @@ export default function ResultPage() {
             <h2 className="text-lg font-semibold text-[#0A400C] mb-1">
               Prevention Tips
             </h2>
+            <p>{solution}</p>
             <ul className="list-disc ml-6 text-sm space-y-1">
               <li>Use disease-resistant seeds</li>
               <li>Install yellow sticky traps to catch whiteflies</li>
