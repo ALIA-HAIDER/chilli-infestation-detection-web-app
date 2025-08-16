@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePlantStore } from "@/store/usePlantStore";
 import Loading from "@/app/components/Loading";
 import toast from "react-hot-toast";
+import CameraModal from "@/app/components/CameraModal";
 
 
 
@@ -13,7 +14,7 @@ export default function ScanNowPage() {
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [loct, setloct] = useState<{ lat: number; lng: number } | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +84,16 @@ export default function ScanNowPage() {
     setPreview(URL.createObjectURL(file));
   };
 
+  // New handler for when an image is captured from the modal
+  const handleCapture = (file: File) => {
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+    setImage(file);
+    setPreview(URL.createObjectURL(file));
+    setIsCameraOpen(false); // Close the modal automatically after capture
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -113,51 +124,25 @@ export default function ScanNowPage() {
     }
   };
 
-  const handleCameraCapture = async () => {
-    setCameraError(null);
-    
-    // Check if we're on a secure context (HTTPS or localhost)
+  // Updated camera handler to open the modal
+  const handleCameraCapture = () => {
+    // Check for browser support before opening the modal
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError("Camera not supported or requires HTTPS");
-      // Fallback to file input with camera capture
-      fallbackCameraCapture();
+      toast.error("Camera not supported on this browser.");
       return;
     }
-
-    try {
-      // Try to access camera first (this will ask for permission)
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } // Prefer rear camera
-      });
-      
-      // Stop the stream immediately (we just wanted to check permission)
-      stream.getTracks().forEach(track => track.stop());
-      
-      // Now use file input with camera capture
-      fallbackCameraCapture();
-    } catch (error) {
-      console.error("Camera access error:", error);
-      setCameraError("Camera access denied or not available");
-      // Still try fallback
-      fallbackCameraCapture();
-    }
-  };
-
-  const fallbackCameraCapture = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment';
-    input.onchange = (e) => {
-      const target = e.target as HTMLInputElement;
-      handleImageUpload(target.files);
-    };
-    input.click();
+    setIsCameraOpen(true);
   };
 
   return (
     <>
       {loading && <Loading message="Analyzing your chilli plant for diseases..." />}
+      {isCameraOpen && (
+        <CameraModal
+          onClose={() => setIsCameraOpen(false)}
+          onCapture={handleCapture}
+        />
+      )}
       
       <main className="min-h-screen bg-gradient-to-br from-[#fdfdfd] to-[#e8ead0] px-4 py-8 flex flex-col items-center justify-center">
         <div className="w-full max-w-2xl space-y-8 p-6 sm:p-8 rounded-lg">
@@ -199,12 +184,12 @@ export default function ScanNowPage() {
                 )}
                 <button
                   onClick={() => {
-                    if (loading) return;
+                    if (loading || !!submitStep) return;
                     URL.revokeObjectURL(preview!);
                     setImage(null);
                     setPreview(null);
                   }}
-                  disabled={loading}
+                  disabled={loading || !!submitStep}
                   className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   ×
@@ -241,22 +226,15 @@ export default function ScanNowPage() {
               onChange={(e) => handleImageUpload(e.target.files)}
               capture="environment"
               className="hidden"
-              disabled={loading}
+              disabled={loading || !!submitStep}
             />
           </div>
 
-          {/* Error Message */}
-          {cameraError && (
-            <div className="text-center">
-              <div className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded border border-red-200 inline-block">
-                {cameraError}
-              </div>
-            </div>
-          )}
+          {/* Error Message is now handled by toast notifications */}
 
           {/* Buttons */}
           <div className="flex gap-4 justify-center flex-wrap">
-            <label className={`flex items-center gap-2 bg-[#dcdcaa] text-black font-medium px-6 py-3 rounded-lg shadow transition ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-[#c7c77e]'}`}>
+            <label className={`flex items-center gap-2 bg-[#dcdcaa] text-black font-medium px-6 py-3 rounded-lg shadow transition ${loading || !!submitStep ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-[#c7c77e]'}`}>
               <FaFolderOpen />
               <span>Browse</span>
               <input
@@ -264,13 +242,13 @@ export default function ScanNowPage() {
                 accept="image/*"
                 onChange={(e) => handleImageUpload(e.target.files)}
                 className="hidden"
-                disabled={loading}
+                disabled={loading || !!submitStep}
               />
             </label>
 
             <button 
               onClick={handleCameraCapture}
-              disabled={loading}
+              disabled={loading || !!submitStep}
               className="flex items-center gap-2 bg-gray-600 text-white font-medium px-6 py-3 rounded-lg cursor-pointer shadow hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaCamera />
@@ -309,3 +287,4 @@ export default function ScanNowPage() {
     </>
   );
 }
+                          
